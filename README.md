@@ -1,0 +1,1 @@
+"# COPE automation project" 
