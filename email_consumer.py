@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from imbox import Imbox
+from imbox.parser import fetch_email_by_uid
 import json
 import os
 import re
@@ -31,57 +32,46 @@ class CopeMail:
 
         if not os.path.exists(self.attachments):
             os.mkdir(self.attachments)
+        
+        imb = Imbox(self.host, username=self.email, password=self.password)
+        email = fetch_email_by_uid(b'4346', imb.connection, imb.parser_policy)
 
         with Imbox(self.host, username=self.email, password=self.password) as imbox:
             messages = imbox.messages(folder="inbox", date__gt=date_since,  raw='has:attachment')
         
-            try:
-                for uid, message in messages:
-                    # imbox.mark_seen(uid)
-                    if message.attachments:
-                        sender_email = message.sent_from[0]["email"]
+            for uid, message in messages:
+                # imbox.mark_seen(uid)
+                if message.attachments:
+                    sender_email = message.sent_from[0]["email"]
 
-                        # Extract domain from sender's email and check if domain name is ok for creating folder
-                        domain = sender_email.split('@')[1].split('.')[0]
-                        domain = self.filter_name(domain)
+                    # Extract domain from sender's email and check if domain name is ok for creating folder
+                    domain = sender_email.split('@')[1].split('.')[0]
+                    domain = self.filter_name(domain)
 
-                        # Create subdirectory based on domain if it doesn't exist
-                        domain_dir = os.path.join(self.attachments, domain)
-                        if not os.path.exists(domain_dir):
-                            os.mkdir(domain_dir)
+                    # Create subdirectory based on domain if it doesn't exist
+                    domain_dir = os.path.join(self.attachments, domain)
+                    if not os.path.exists(domain_dir):
+                        os.mkdir(domain_dir)
 
-                        for attachment in message.attachments:
-                            # Save attachments to the designated domain subdirectory
-                            file_data = attachment.get('content')
-                            filename = self.filter_name(attachment.get('filename'))
+                    for attachment in message.attachments:
+                        # Save attachments to the designated domain subdirectory
+                        file_data = attachment.get('content')
+                        filename = self.filter_name(attachment.get('filename'))
 
-                            if filename == '':
-                                filename = dateprint + str(error_counter) + '.pdf'
-                                error_counter += 1
+                        if filename == '':
+                            filename = dateprint + str(error_counter) + '.pdf'
+                            error_counter += 1
 
-                            filepath = os.path.join(domain_dir, filename)
+                        filepath = os.path.join(domain_dir, filename)
 
-                            try:
-                                with open(filepath, "wb") as f:
-                                    f.write(file_data.read())
-                            except:
-                                print("\t\t\tERRO:")
-                                print(f"SENDER_EMAIL: {sender_email}")
-                                print(f"DOMAIN: {domain}")
-                                print(f"DOMAIN_DIR: {domain_dir}")
-                                print(f"DOMAIN_DIR: {domain_dir}")
-                                print(f"FILENAME: {filename}")
-                                print(f"FILEPATH: {filepath}")
-                                print(f"TITULO: {message.subject}")
-                                quit()
+                        with open(filepath.replace('\r', '').replace('\n', '').replace('\t', ''), "wb") as f:
+                            f.write(file_data.read())
 
-                            if self.con_lvl >= 3:
-                                print(f"Saved attachment {filename} for message {uid} from {sender_email}")
-                                print(f'\t\tPATH: {filepath}')
+                        if self.con_lvl >= 3:
+                            print(f"Saved attachment {filename} for message {uid} from {sender_email}")
+                            print(f'\t\tPATH: {filepath}')
 
-                            session_counter += 1
-            except:
-                import pdb;pdb.set_trace()
+                        session_counter += 1
 
     def filter_name(self, name):
         # Define a regular expression pattern to match disallowed characters
