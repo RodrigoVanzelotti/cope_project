@@ -1,11 +1,9 @@
 from datetime import datetime, timedelta
 from imbox import Imbox
-from imbox.parser import fetch_email_by_uid
+# from imbox.parser import fetch_email_by_uid # utilizado para testes de lib
 import json
 import os
 import re
-
-TESTING_CLASS = True
 
 class CopeMail:
     def __init__(self, 
@@ -32,9 +30,6 @@ class CopeMail:
 
         if not os.path.exists(self.attachments):
             os.mkdir(self.attachments)
-        
-        imb = Imbox(self.host, username=self.email, password=self.password)
-        email = fetch_email_by_uid(b'4346', imb.connection, imb.parser_policy)
 
         with Imbox(self.host, username=self.email, password=self.password) as imbox:
             messages = imbox.messages(folder="inbox", date__gt=date_since,  raw='has:attachment')
@@ -46,7 +41,7 @@ class CopeMail:
 
                     # Extract domain from sender's email and check if domain name is ok for creating folder
                     domain = sender_email.split('@')[1].split('.')[0]
-                    domain = self.filter_name(domain)
+                    domain = self.__filter_name(domain)
 
                     # Create subdirectory based on domain if it doesn't exist
                     domain_dir = os.path.join(self.attachments, domain)
@@ -56,7 +51,7 @@ class CopeMail:
                     for attachment in message.attachments:
                         # Save attachments to the designated domain subdirectory
                         file_data = attachment.get('content')
-                        filename = self.filter_name(attachment.get('filename'))
+                        filename = self.__filter_name(attachment.get('filename'))
 
                         if filename == '':
                             filename = dateprint + str(error_counter) + '.pdf'
@@ -67,13 +62,18 @@ class CopeMail:
                         with open(filepath.replace('\r', '').replace('\n', '').replace('\t', ''), "wb") as f:
                             f.write(file_data.read())
 
-                        if self.con_lvl >= 3:
-                            print(f"Saved attachment {filename} for message {uid} from {sender_email}")
-                            print(f'\t\tPATH: {filepath}')
+                        match self.con_lvl:
+                            case 1:
+                                pass
+                            case 2:
+                                pass
+                            case 3:
+                                print(f"Saved attachment {filename} for message {uid} from {sender_email}")
+                                print(f'\tPATH: {filepath}\n')
 
                         session_counter += 1
 
-    def filter_name(self, name):
+    def __filter_name(self, name):
         # Define a regular expression pattern to match disallowed characters
         disallowed_chars = r'[<>:"/\\|?*]'
         
@@ -82,14 +82,27 @@ class CopeMail:
     
         return clean_name
 
+    # def _log_generation(self, **kwargs):
+    #     log_path = 'log.txt'
+
+    #     with open(log_path, "w+r") as f:
+    #         print('llala', file=f)
+    #     pass
+
 
 if __name__ == '__main__':
+    # Caso queira testar a classe, não é necessário fazer o Fetch de todos os emails.
+    # Então executamos só nos ultimos 7 dias, que é o tempo suposto do script ser rodado
+    TESTING_CLASS = True
+
     if TESTING_CLASS:
-        # Calculate the datetime 10 days before
-        date_since = datetime.now() - timedelta(days=5)
+        # Calculate the datetime 7 days before
+        date_since = datetime.now() - timedelta(days=7)
     else:
         date_since = None
            
-    Mailer = CopeMail('creds.json', consciousness_lvl = 3)
+    # Pega as credenciais e aplica a unica função da classe
+    Mailer = CopeMail('creds.json', consciousness_lvl=3)
     Mailer.get_attachments(date_since)
+    # Mailer._log_generation(teste1='resp1', teste2='resp2', teste3='resp3')
     
