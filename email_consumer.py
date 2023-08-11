@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from imbox import Imbox
-# from imbox.parser import fetch_email_by_uid # utilizado para testes de lib
 import json
 import os
 import re
@@ -82,13 +81,6 @@ class CopeMail:
     
         return clean_name
 
-    # def _log_generation(self, **kwargs):
-    #     log_path = 'log.txt'
-
-    #     with open(log_path, "w+r") as f:
-    #         print('llala', file=f)
-    #     pass
-
 
 if __name__ == '__main__':
     # Caso queira testar a classe, não é necessário fazer o Fetch de todos os emails.
@@ -104,5 +96,4 @@ if __name__ == '__main__':
     # Pega as credenciais e aplica a unica função da classe
     Mailer = CopeMail('creds.json', consciousness_lvl=3)
     Mailer.get_attachments(date_since)
-    # Mailer._log_generation(teste1='resp1', teste2='resp2', teste3='resp3')
     
