@@ -1,1 +1,1 @@
-"# COPE automation project" 
+# COPE automation project 
